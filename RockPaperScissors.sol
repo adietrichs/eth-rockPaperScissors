@@ -6,107 +6,59 @@ contract RockPaperScissors {
         bytes32[2] blindedActions;
         Action[2] actions;
         bool[2] revealed;
-        uint value;
+        uint stake;
         uint revealTime;
         bool started;
+        bool cancelled;
         bool withdrawn;
     }
 
     uint[3] public stake;
 
-    Game[][4]
+    Game[][3] public publicGames;
+    bool[3] gameOpen;
+    mapping (address => Game[]) public customGames;
+    mapping (address => Game[]) public privateGames;
 
     function RockPaperScissors(uint[3] _stake) {
         stake = _stake;
     }
-}
 
-contract myTest {
-    uint[][3] public myStore;
+    function play(bytes32 _blindedAction) {
+        uint stakeType;
+        if (stake[0] == msg.value) stakeType = 0;
+        else if (stake[1] == msg.value) stakeType = 1;
+        else if (stake[2] == msg.value) stakeType = 2;
+        else throw;
 
-    function add(uint _i, uint _newValue) {
-        myStore[_i].push(newValue)
-    }
-
-    function set(uint _i, uint _j, uint _newValue) {
-        myStore[_i][_j] = _newValue;
-    }
-}
-
-
-contract RockPaperScissors {
-    enum Actions { Rock, Paper, Scissors }
-    enum Players { Player1, Player2 }
-
-    struct Game {
-        mapping (Players => address) players;
-        mapping (Players => bytes32) blindedActions;
-        mapping (Players => Actions) actions;
-        uint value;
-        bool started;
-        bool revealed;
-        uint revealTime;
-        bool finished;
-    }
-
-    uint constant waitForReveal = 1 day;
-
-    Game[] public games;
-
-    mapping (address => uint) public balances;
-
-    modifier withoutEther() {
-        if (msg.value > 0) throw;
-        _
-    }
-
-    modifier withEther() {
-        if (msg.value == 0) throw;
-        _
-    }
-
-    modifier validGameID(uint _gameID) {
-        if (games.length <= _gameID) throw;
-        _
-    }
-
-    function createGame(bytes32 _blindedAction) withEther {
-        var i = games.length++;
-        Game g = games[i];
-        g.players[Player1] = msg.sender;
-        g.blindedActions[Player1] = _blindedAction;
-        g.value = msg.value;
-    }
-
-    function cancelGame(uint _gameID) withoutEther validGameID(_gameID) {
-        Game g = games[_gameID];
-        if (g.players[Player1] != msg.sender || g.started) throw;
-
-    }
-
-    function joinGame(uint _gameID, bytes32 _blindedAction) withEther validGameID(_gameID) {
-        Game g = games[_gameID];
-        if (g.started) throw;
-        g.players[Player2] = msg.sender;
-        g.blindedActions[Player2] = _blindedAction;
-        if (g.value > msg.value) {
-            balances[g.players[Player1]] += g.value - msg.value;
-            g.value = msg.value;
+        if (gameOpen[stakeType]) {
+            Game openGame = publicGames[stakeType][publicGames[stakeType].length - 1];
+            joinGame(openGame, _blindedAction);
+            gameOpen[stakeType] = false;
         }
-        else if (g.value < msg.value) {
-            balances[msg.sender] += msg.value - g.value;
+        else {
+            publicGames[stakeType].push(createGame(_blindedAction));
+            gameOpen[stakeType] = true;
         }
-        g.started = true;
     }
 
-    function withdraw() withoutEther {
-        var amount = balances[msg.sender];
-        balances[msg.sender] = 0;
-        if (!msg.sender.send(amount))
-            throw;
+    function cancel(uint _stakeType, uint _gameID) {
+        if (_stakeType > 2 || _gameID >= publicGames[_stakeType].length) throw;
+        Game[] game = publicGames[_stakeType][_gameID];
+        if (game.started) throw;
+        game.cancelled = true;
     }
 
-    function () {
-        throw;
+    function createGame(bytes32 _blindedAction) private constant returns (Game _game) {
+        _game.players[0] = msg.sender;
+        _game.blindedActions[0] = _blindedAction;
+        _game.stake = msg.value;
+    }
+
+    function joinGame(Game storage _game, bytes32 _blindedAction) private {
+        if (_game.started || _game.cancelled) throw;
+        _game.players[1] = msg.sender;
+        _game.blindedActions[1] = _blindedAction;
+        _game.started = true;
     }
 }
