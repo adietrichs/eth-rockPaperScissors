@@ -1,4 +1,40 @@
 contract RockPaperScissors {
+    enum Action {Rock, Paper, Scissors}
+
+    struct Game {
+        address[2] players;
+        bytes32[2] blindedActions;
+        Action[2] actions;
+        bool[2] revealed;
+        uint value;
+        uint revealTime;
+        bool started;
+        bool withdrawn;
+    }
+
+    uint[3] public stake;
+
+    Game[][4]
+
+    function RockPaperScissors(uint[3] _stake) {
+        stake = _stake;
+    }
+}
+
+contract myTest {
+    uint[][3] public myStore;
+
+    function add(uint _i, uint _newValue) {
+        myStore[_i].push(newValue)
+    }
+
+    function set(uint _i, uint _j, uint _newValue) {
+        myStore[_i][_j] = _newValue;
+    }
+}
+
+
+contract RockPaperScissors {
     enum Actions { Rock, Paper, Scissors }
     enum Players { Player1, Player2 }
 
